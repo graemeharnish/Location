@@ -9,6 +9,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.graemeharnish.services.postalcode.model.PostalCode;
 import com.graemeharnish.services.postalcode.service.PostalService;
 import com.graemeharnish.services.rest.RESTService;
 
@@ -31,12 +32,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        Disposable disposable = RESTService.createService(PostalService.class).fetchPostalCode(98199)
+        Disposable disposable = RESTService.createService(PostalService.class).fetchPostalCode(98101)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(postalCode -> {
-                    System.out.println(postalCode.getPostalCodes());
-                }, (error) -> {
+                .subscribe(postalCodes -> {
+                    for (PostalCode postalCode : postalCodes.getPostalCodes()) {
+                        LatLng sydney = new LatLng(postalCode.getLat(), postalCode.getLng());
+                        mMap.addMarker(new MarkerOptions().position(sydney)
+                                .title("Marker in " + postalCode.getPlaceName()));
+
+                    }
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(postalCodes.getPostalCodes().get(0).getLat(), postalCodes.getPostalCodes().get(0).getLng()), 5));
+
+                        }, (error) -> {
                         System.out.println(error.getCause());
                     }
                 );
@@ -58,10 +66,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        mMap.getUiSettings().setZoomControlsEnabled(true);
     }
 }
